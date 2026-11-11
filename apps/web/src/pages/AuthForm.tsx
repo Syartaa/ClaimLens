@@ -2,6 +2,7 @@ import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ApiError, api, type AuthResult } from "../auth/api";
 import { setSession } from "../auth/session";
+import { fieldClass, primaryButton } from "../ui";
 
 type AuthFormProps = {
   mode: "login" | "register";
@@ -62,7 +63,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             <label className="flex flex-col gap-1 text-sm text-stone-700">
               First name
               <input
-                className="border border-stone-300 px-3 py-2 text-stone-900"
+                className={fieldClass}
                 autoComplete="given-name"
                 value={firstName}
                 onChange={(event) => setFirstName(event.target.value)}
@@ -72,7 +73,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             <label className="flex flex-col gap-1 text-sm text-stone-700">
               Last name
               <input
-                className="border border-stone-300 px-3 py-2 text-stone-900"
+                className={fieldClass}
                 autoComplete="family-name"
                 value={lastName}
                 onChange={(event) => setLastName(event.target.value)}
@@ -84,7 +85,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <label className="flex flex-col gap-1 text-sm text-stone-700">
           Email
           <input
-            className="border border-stone-300 px-3 py-2 text-stone-900"
+            className={fieldClass}
             type="email"
             autoComplete="email"
             value={email}
@@ -95,7 +96,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <label className="flex flex-col gap-1 text-sm text-stone-700">
           Password
           <input
-            className="border border-stone-300 px-3 py-2 text-stone-900"
+            className={fieldClass}
             type="password"
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             value={password}
@@ -106,7 +107,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         {mode === "register" ? (
           <p className="text-sm text-stone-500">Use at least 8 characters, with upper and lower case letters and a digit.</p>
         ) : null}
-        <button className="bg-stone-900 px-4 py-2 text-sm text-white disabled:opacity-60" type="submit" disabled={pending}>
+        <button className={primaryButton} type="submit" disabled={pending}>
           {pending ? "Please wait" : title}
         </button>
       </form>

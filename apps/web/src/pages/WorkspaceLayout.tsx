@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { api } from "../auth/api";
 import { canReview, clearSession, getRefreshToken, hasSession, isAdmin } from "../auth/session";
+import { primaryButton, secondaryButton } from "../ui";
 
 export function WorkspaceLayout() {
   const navigate = useNavigate();
@@ -30,32 +31,32 @@ export function WorkspaceLayout() {
   return (
     <div className="min-h-svh bg-stone-50 text-stone-900">
       <header className="border-b border-stone-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center gap-6 px-6 py-4">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-6 py-4">
           <Link className="text-sm font-medium tracking-wide text-stone-500" to="/app">
             ClaimLens
           </Link>
-          <nav className="flex gap-4 text-sm">
-            <NavLink className="text-stone-700" to="/app">
+          <nav className="flex flex-wrap items-center gap-2 text-sm">
+            <NavLink className={navClass} to="/app" end>
               Workspace
             </NavLink>
-            <NavLink className="text-stone-700" to="/app/investigations">
+            <NavLink className={navClass} to="/app/investigations" end>
               History
             </NavLink>
-            <NavLink className="text-stone-700" to="/app/investigations/new">
+            <NavLink className={navClass} to="/app/investigations/new">
               New investigation
             </NavLink>
             {canReview() ? (
-              <NavLink className="text-stone-700" to="/app/review">
+              <NavLink className={navClass} to="/app/review">
                 Review
               </NavLink>
             ) : null}
             {isAdmin() ? (
-              <NavLink className="text-stone-700" to="/app/admin">
+              <NavLink className={navClass} to="/app/admin">
                 Admin
               </NavLink>
             ) : null}
           </nav>
-          <button className="ml-auto text-sm text-stone-700" type="button" onClick={() => void logout()}>
+          <button className={`${secondaryButton} ml-auto`} type="button" onClick={() => void logout()}>
             Sign out
           </button>
         </div>
@@ -65,4 +66,8 @@ export function WorkspaceLayout() {
       </div>
     </div>
   );
+}
+
+function navClass({ isActive }: { isActive: boolean }) {
+  return isActive ? primaryButton : secondaryButton;
 }

@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ApiError, api, baseUrl } from "../auth/api";
 import { canReview, getAccessToken, sessionUserId } from "../auth/session";
 import type { Investigation } from "../investigations/types";
+import { dangerButton, fieldClass, Pill, primaryButton, secondaryButton } from "../ui";
 
 export function InvestigationDetailPage() {
   const { id } = useParams();
@@ -138,43 +139,78 @@ export function InvestigationDetailPage() {
     return <p role="status">Loading investigation</p>;
   }
 
+  const running = isRunning(investigation.processingStatus);
+  const owner = sessionUserId() === investigation.ownerId;
+
   return (
     <article>
-      <p className="text-sm text-stone-500">{investigation.inputType}</p>
-      <h1 className="mt-2 text-3xl font-semibold tracking-tight">{investigation.title}</h1>
-      <p className="mt-4 text-sm text-stone-500">{live ? "Live updates" : "Polling for updates"}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill value={investigation.inputType} />
+        <Pill value={investigation.processingStatus} />
+        {investigation.processingStatus === "Completed" && investigation.verdict ? <Pill value={investigation.verdict} /> : null}
+        <span className="font-sans text-sm text-stone-500">{live ? "Live updates" : "Checking every few seconds"}</span>
+      </div>
+      <h1 className="mt-3 text-3xl font-semibold tracking-tight">{investigation.title}</h1>
       {actionError ? (
-        <p className="mt-4 border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
+        <p className="mt-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900" role="alert">
           {actionError}
         </p>
       ) : null}
+      <ProgressSteps status={investigation.processingStatus} />
+      <section className={`mt-6 max-w-2xl rounded-lg border px-4 py-4 ${resultCardClass(investigation)}`}>
+        <h2 className="font-sans text-sm font-medium">What this result means</h2>
+        <p className="mt-2">{statusExplanation(investigation.processingStatus, investigation.failureCode)}</p>
+        {investigation.processingStatus === "Completed" && investigation.confidenceScore != null ? (
+          <p className="mt-3">
+            System confidence {investigation.confidenceScore.toFixed(2)}. This is not the probability the claim is true.
+          </p>
+        ) : null}
+        {investigation.summary ? <p className="mt-3">{investigation.summary}</p> : null}
+        {investigation.verdict === "InsufficientEvidence" ? (
+          <p className="mt-3 text-sm">No sources were strong enough to classify this claim.</p>
+        ) : null}
+        {running ? <p className="mt-3 text-sm">Stay on this page. It updates by itself.</p> : null}
+      </section>
       {investigation.approvedAt ? (
-        <p className="mt-4 border border-stone-300 bg-white px-4 py-3 text-sm" role="status">
+        <p className="mt-4 max-w-2xl rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-950" role="status">
           Approved {new Date(investigation.approvedAt).toLocaleString()}. Approval does not change the calculated verdict.
         </p>
       ) : null}
-      <p className="mt-2 inline-block border border-stone-300 px-3 py-1 text-sm">
-        {investigation.processingStatus === "Completed" && investigation.verdict ? investigation.verdict : statusLabel(investigation.processingStatus)}
-      </p>
-      {investigation.processingStatus === "Completed" && investigation.confidenceScore != null ? (
-        <p className="mt-4 max-w-2xl text-stone-700">
-          System confidence {investigation.confidenceScore.toFixed(2)}. This is not the probability the claim is true.
-        </p>
-      ) : null}
-      {investigation.summary ? <p className="mt-4 max-w-2xl text-stone-700">{investigation.summary}</p> : null}
-      {investigation.verdict === "InsufficientEvidence" ? (
-        <p className="mt-4 max-w-2xl border border-stone-300 bg-white px-4 py-3 text-sm">
-          No sources were strong enough to classify this claim.
-        </p>
-      ) : null}
-      <p className="mt-4 max-w-2xl text-stone-700">{statusExplanation(investigation.processingStatus, investigation.failureCode)}</p>
       {investigation.evidenceProvider === "mock" ? (
-        <p className="mt-4 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
+        <p className="mt-4 max-w-2xl rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="status">
           These sources are development fixtures, not live web search.
         </p>
       ) : null}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link className={secondaryButton} to="/app/investigations">
+          Back to history
+        </Link>
+        <a className={secondaryButton} href="#sources">
+          See sources
+        </a>
+        {owner && running ? (
+          <button className={dangerButton} type="button" onClick={() => void cancel()}>
+            Cancel
+          </button>
+        ) : null}
+        {owner && (investigation.processingStatus === "Failed" || investigation.processingStatus === "Completed") ? (
+          <button className={secondaryButton} type="button" onClick={() => void rerun()}>
+            Re-run
+          </button>
+        ) : null}
+        {owner ? (
+          <button className={dangerButton} type="button" onClick={() => void remove()}>
+            Delete
+          </button>
+        ) : null}
+        {canReview() && investigation.processingStatus === "Completed" && !investigation.approvedAt ? (
+          <a className={primaryButton} href="#approve">
+            Approve
+          </a>
+        ) : null}
+      </div>
       {(investigation.claims ?? []).length > 0 ? (
-        <section className="mt-8">
+        <section className="mt-8" id="sources">
           <h2 className="text-lg font-medium">Extracted claims</h2>
           <ol className="mt-3 list-decimal space-y-3 pl-5">
             {(investigation.claims ?? []).map((claim) => (
@@ -199,7 +235,7 @@ export function InvestigationDetailPage() {
         </section>
       ) : null}
       <h2 className="mt-8 text-lg font-medium">Original input</h2>
-      <p className="mt-2 whitespace-pre-wrap border border-stone-200 bg-white px-4 py-3">{investigation.originalInput}</p>
+      <p className="mt-2 whitespace-pre-wrap rounded-lg border border-stone-200 bg-white px-4 py-3">{investigation.originalInput}</p>
       {(investigation.timeline ?? []).length > 0 ? (
         <section className="mt-8">
           <h2 className="text-lg font-medium">Timeline</h2>
@@ -223,24 +259,6 @@ export function InvestigationDetailPage() {
           onError={setActionError}
         />
       ) : null}
-      <div className="mt-6 flex gap-4 text-sm">
-        <Link to="/app/investigations">Back to history</Link>
-        {sessionUserId() === investigation.ownerId && investigation.processingStatus !== "Completed" && investigation.processingStatus !== "Failed" ? (
-          <button type="button" onClick={() => void cancel()}>
-            Cancel
-          </button>
-        ) : null}
-        {sessionUserId() === investigation.ownerId && (investigation.processingStatus === "Failed" || investigation.processingStatus === "Completed") ? (
-          <button type="button" onClick={() => void rerun()}>
-            Re-run
-          </button>
-        ) : null}
-        {sessionUserId() === investigation.ownerId ? (
-          <button className="text-red-800" type="button" onClick={() => void remove()}>
-            Delete
-          </button>
-        ) : null}
-      </div>
     </article>
   );
 }
@@ -263,20 +281,20 @@ function EvidenceList({
   }
 
   const groups = [
-    ["Supporting", items.filter((item) => item.stance === "Supporting")],
-    ["Contradicting", items.filter((item) => item.stance === "Contradicting")],
-    ["Context", items.filter((item) => item.stance === "Neutral" || item.stance == null)],
+    ["Supporting", "border-emerald-300 bg-emerald-50/40", items.filter((item) => item.stance === "Supporting")],
+    ["Contradicting", "border-rose-300 bg-rose-50/40", items.filter((item) => item.stance === "Contradicting")],
+    ["Context", "border-stone-200 bg-white", items.filter((item) => item.stance === "Neutral" || item.stance == null)],
   ] as const;
 
   return (
     <div className="mt-3 space-y-4">
-      {groups.map(([label, group]) =>
+      {groups.map(([label, tone, group]) =>
         group.length === 0 ? null : (
           <section key={label}>
-            <h3 className="text-sm font-medium">{label}</h3>
+            <h3 className="font-sans text-sm font-medium">{label}</h3>
             <ul className="mt-2 space-y-3">
               {group.map((item) => (
-                <li key={item.id} className="border border-stone-200 bg-white px-4 py-3">
+                <li key={item.id} className={`rounded-lg border px-4 py-3 ${tone}`}>
                   <p className="font-medium">{item.sourceTitle}</p>
                   <p className="text-sm text-stone-500">
                     {item.publisher || item.domain}
@@ -382,11 +400,12 @@ function EvidenceReviewForm({
         void submitStance();
       }}
     >
+      <p className="font-sans text-sm font-medium text-stone-800">Your review</p>
       <p className="text-sm text-stone-600">A reviewed stance does not replace the calculated verdict.</p>
       <label className="flex flex-col gap-1 text-sm text-stone-700">
         Stance
         <select
-          className="border border-stone-300 px-3 py-2"
+          className={fieldClass}
           value={stance}
           onChange={(event) => setStance(event.target.value)}
         >
@@ -398,18 +417,19 @@ function EvidenceReviewForm({
       <label className="flex flex-col gap-1 text-sm text-stone-700">
         Note
         <textarea
-          className="border border-stone-300 px-3 py-2"
+          className={fieldClass}
           value={note}
           onChange={(event) => setNote(event.target.value)}
           required
           maxLength={1000}
+          placeholder="Say why you agree or disagree."
         />
       </label>
-      <div className="flex gap-3 text-sm">
-        <button className="border border-stone-400 px-3 py-2" type="submit" disabled={pending}>
+      <div className="flex flex-wrap gap-2">
+        <button className={confirming ? primaryButton : "inline-flex items-center justify-center rounded-md bg-amber-700 px-4 py-2 text-sm font-medium font-sans text-white hover:bg-amber-800 disabled:opacity-60"} type="submit" disabled={pending}>
           {confirming ? "Confirm stance" : "Override stance"}
         </button>
-        <button className="border border-stone-400 px-3 py-2" type="button" disabled={pending} onClick={() => void flagSource()}>
+        <button className={dangerButton} type="button" disabled={pending} onClick={() => void flagSource()}>
           Flag source
         </button>
       </div>
@@ -447,47 +467,81 @@ function ApproveInvestigation({
 
   return (
     <form
-      className="mt-8 max-w-xl border border-stone-200 bg-white px-4 py-3"
+      id="approve"
+      className="mt-8 max-w-xl rounded-lg border border-teal-300 bg-teal-50 px-4 py-4"
       onSubmit={(event) => {
         event.preventDefault();
         void approve();
       }}
     >
       <h2 className="text-lg font-medium">Approve investigation</h2>
+      <p className="mt-2 text-sm text-teal-950">Use this after you have checked the sources. Approval does not change the calculated verdict.</p>
       <label className="mt-3 flex flex-col gap-1 text-sm text-stone-700">
-        Note
-        <textarea className="border border-stone-300 px-3 py-2" value={note} onChange={(event) => setNote(event.target.value)} maxLength={1000} />
+        Note, optional
+        <textarea className={fieldClass} value={note} onChange={(event) => setNote(event.target.value)} maxLength={1000} />
       </label>
-      <button className="mt-3 border border-stone-400 px-3 py-2 text-sm" type="submit" disabled={pending}>
-        Approve
+      <button className={`${primaryButton} mt-3`} type="submit" disabled={pending}>
+        {pending ? "Saving" : "Approve"}
       </button>
     </form>
   );
 }
 
-function statusLabel(status: string): string {
-  if (status === "Pending") {
-    return "Waiting to extract claims";
+function isRunning(status: string): boolean {
+  return status !== "Completed" && status !== "Failed";
+}
+
+function resultCardClass(investigation: Investigation): string {
+  if (investigation.processingStatus === "Failed") {
+    return "border-rose-300 bg-rose-50 text-rose-950";
   }
-  if (status === "ExtractingClaims") {
-    return "Extracting claims";
+  if (investigation.processingStatus !== "Completed") {
+    return "border-sky-300 bg-sky-50 text-sky-950";
   }
-  if (status === "GatheringEvidence") {
-    return "Collecting evidence";
+  if (investigation.verdict === "Supported" || investigation.verdict === "MostlySupported") {
+    return "border-emerald-300 bg-emerald-50 text-emerald-950";
   }
-  if (status === "AnalyzingEvidence") {
-    return "Classifying evidence";
+  if (investigation.verdict === "Contradicted" || investigation.verdict === "MostlyContradicted") {
+    return "border-rose-300 bg-rose-50 text-rose-950";
   }
-  if (status === "GeneratingConclusion") {
-    return "Calculating verdict";
+  if (investigation.verdict === "Mixed") {
+    return "border-amber-300 bg-amber-50 text-amber-950";
   }
-  if (status === "Completed") {
-    return "Completed";
-  }
-  if (status === "Failed") {
-    return "Could not finish";
-  }
-  return status;
+  return "border-stone-300 bg-white text-stone-800";
+}
+
+const progressSteps = ["Extract claims", "Collect sources", "Classify", "Verdict"];
+
+function ProgressSteps({ status }: { status: string }) {
+  const current = status === "Pending" || status === "ExtractingClaims"
+    ? 0
+    : status === "GatheringEvidence"
+      ? 1
+      : status === "AnalyzingEvidence"
+        ? 2
+        : status === "GeneratingConclusion" || status === "Completed"
+          ? 3
+          : -1;
+
+  return (
+    <ol className="mt-6 grid gap-2 sm:grid-cols-4">
+      {progressSteps.map((label, index) => {
+        const done = status === "Completed" || (current > index && status !== "Failed");
+        const active = status !== "Failed" && status !== "Completed" && current === index;
+        const tone = done
+          ? "border-emerald-300 bg-emerald-50 text-emerald-950"
+          : active
+            ? "border-teal-700 bg-teal-800 text-white"
+            : "border-stone-200 bg-white text-stone-500";
+        return (
+          <li key={label} className={`rounded-lg border px-3 py-2 font-sans text-sm ${tone}`}>
+            <span className="text-xs font-medium">{index + 1}</span>
+            <span className="mt-1 block">{label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
 function statusExplanation(status: string, failureCode: string | null): string {

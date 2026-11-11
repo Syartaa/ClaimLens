@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api } from "../auth/api";
+import { labelFor, Pill, secondaryButton } from "../ui";
 
 type ReviewQueue = {
   items: Array<{
@@ -49,20 +50,25 @@ export function ReviewQueuePage() {
           No completed investigations are waiting.
         </p>
       ) : (
-        <ul className="mt-8 divide-y divide-stone-200 border border-stone-200 bg-white">
+        <ul className="mt-8 divide-y divide-stone-200 overflow-hidden rounded-lg border border-stone-200 bg-white">
           {queue.items.map((item) => (
-            <li key={item.id} className="flex flex-wrap items-baseline justify-between gap-3 px-4 py-3">
+            <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div>
                 <Link className="font-medium" to={`/app/investigations/${item.id}`}>
                   {item.title}
                 </Link>
                 <p className="text-sm text-stone-500">
                   {item.ownerEmail}
-                  {item.verdict ? ` · ${item.verdict}` : ""}
+                  {item.verdict ? ` · ${labelFor(item.verdict)}` : ""}
                   {item.completedAt ? ` · ${new Date(item.completedAt).toLocaleString()}` : ""}
                 </p>
               </div>
-              <p className="text-sm text-stone-600">{item.approvedAt ? "Approved" : "Needs review"}</p>
+              <div className="flex items-center gap-2">
+                <Pill value={item.approvedAt ? "Approved" : "NeedsReview"} />
+                <Link className={secondaryButton} to={`/app/investigations/${item.id}`}>
+                  Open
+                </Link>
+              </div>
             </li>
           ))}
         </ul>

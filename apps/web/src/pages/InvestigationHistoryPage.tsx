@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ApiError, api } from "../auth/api";
 import type { InvestigationList } from "../investigations/types";
+import { fieldClass, Pill, primaryButton, secondaryButton, dangerButton } from "../ui";
 
 export function InvestigationHistoryPage() {
   const [params, setParams] = useSearchParams();
@@ -92,11 +93,11 @@ export function InvestigationHistoryPage() {
   return (
     <section>
       <h1 className="text-3xl font-semibold tracking-tight">Investigation history</h1>
-      <form className="mt-6 flex flex-wrap gap-3" onSubmit={applySearch}>
+      <form className="mt-6 flex flex-wrap items-end gap-3 rounded-lg border border-stone-200 bg-white p-4" onSubmit={applySearch}>
         <label className="text-sm text-stone-700">
           Search
           <input
-            className="ml-2 border border-stone-300 px-3 py-2"
+            className={`mt-1 block ${fieldClass}`}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -104,7 +105,7 @@ export function InvestigationHistoryPage() {
         <label className="text-sm text-stone-700">
           Status
           <select
-            className="ml-2 border border-stone-300 px-3 py-2"
+            className={`mt-1 block ${fieldClass}`}
             value={processingStatus}
             onChange={(event) => setFilter("processingStatus", event.target.value)}
           >
@@ -117,7 +118,7 @@ export function InvestigationHistoryPage() {
         <label className="text-sm text-stone-700">
           Input
           <select
-            className="ml-2 border border-stone-300 px-3 py-2"
+            className={`mt-1 block ${fieldClass}`}
             value={inputType}
             onChange={(event) => setFilter("inputType", event.target.value)}
           >
@@ -129,7 +130,7 @@ export function InvestigationHistoryPage() {
         <label className="text-sm text-stone-700">
           Verdict
           <select
-            className="ml-2 border border-stone-300 px-3 py-2"
+            className={`mt-1 block ${fieldClass}`}
             value={verdict}
             onChange={(event) => setFilter("verdict", event.target.value)}
           >
@@ -145,7 +146,7 @@ export function InvestigationHistoryPage() {
         <label className="text-sm text-stone-700">
           Sort
           <select
-            className="ml-2 border border-stone-300 px-3 py-2"
+            className={`mt-1 block ${fieldClass}`}
             value={sort}
             onChange={(event) => setFilter("sort", event.target.value)}
           >
@@ -154,7 +155,7 @@ export function InvestigationHistoryPage() {
             <option value="-updatedAt">Recently updated</option>
           </select>
         </label>
-        <button className="border border-stone-300 px-4 py-2 text-sm" type="submit">
+        <button className={primaryButton} type="submit">
           Apply
         </button>
       </form>
@@ -165,23 +166,31 @@ export function InvestigationHistoryPage() {
       ) : null}
       {!list && !error ? <p className="mt-6" role="status">Loading history</p> : null}
       {list && list.items.length === 0 ? (
-        <p className="mt-6 text-stone-600">
-          No investigations match these filters. <Link to="/app/investigations/new">Start one</Link>.
-        </p>
+        <div className="mt-6 rounded-lg border border-teal-200 bg-teal-50 px-4 py-4 text-teal-950">
+          <p>No investigations match these filters.</p>
+          <Link className={`${primaryButton} mt-3`} to="/app/investigations/new">
+            Start an investigation
+          </Link>
+        </div>
       ) : null}
-      <ul className="mt-6 divide-y divide-stone-200 border border-stone-200 bg-white">
+      <ul className="mt-6 divide-y divide-stone-200 overflow-hidden rounded-lg border border-stone-200 bg-white">
         {list?.items.map((item) => (
-          <li key={item.id} className="flex items-center justify-between gap-4 px-4 py-3">
+          <li key={item.id} className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
             <Link to={`/app/investigations/${item.id}`}>
-              <span className="block">{item.title}</span>
-              <span className="text-sm text-stone-500">{item.inputType}</span>
+              <span className="block font-medium">{item.title}</span>
+              <span className="text-sm text-stone-500">{item.inputType === "ArticleText" ? "Article text" : "Claim"}</span>
             </Link>
-            <span className="text-sm text-stone-500">{item.verdict ?? item.processingStatus}</span>
-            <span className="flex gap-3 text-sm">
-              <button type="button" onClick={() => void rerun(item.id)}>
-                Re-run
-              </button>
-              <button className="text-red-800" type="button" onClick={() => void remove(item.id)}>
+            <Pill value={item.verdict ?? item.processingStatus} />
+            <span className="flex gap-2">
+              <Link className={secondaryButton} to={`/app/investigations/${item.id}`}>
+                Open
+              </Link>
+              {item.processingStatus === "Completed" || item.processingStatus === "Failed" ? (
+                <button className={secondaryButton} type="button" onClick={() => void rerun(item.id)}>
+                  Re-run
+                </button>
+              ) : null}
+              <button className={dangerButton} type="button" onClick={() => void remove(item.id)}>
                 Delete
               </button>
             </span>
@@ -190,7 +199,7 @@ export function InvestigationHistoryPage() {
       </ul>
       <div className="mt-4 flex items-center gap-3 text-sm">
         <button
-          className="border border-stone-300 px-3 py-1 disabled:opacity-40"
+          className={secondaryButton}
           type="button"
           disabled={page === "1"}
           onClick={() => setFilter("page", String(Number(page) - 1))}
@@ -201,7 +210,7 @@ export function InvestigationHistoryPage() {
           Page {page} of {totalPages}
         </span>
         <button
-          className="border border-stone-300 px-3 py-1 disabled:opacity-40"
+          className={secondaryButton}
           type="button"
           disabled={Number(page) >= totalPages}
           onClick={() => setFilter("page", String(Number(page) + 1))}

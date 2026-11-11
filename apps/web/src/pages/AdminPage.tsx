@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ApiError, api } from "../auth/api";
+import { Pill, secondaryButton } from "../ui";
 
 type CountByLabel = { label: string; count: number };
 
@@ -111,7 +112,7 @@ export function AdminPage() {
       ) : (
         <ul className="mt-3 flex flex-wrap gap-2">
           {dashboard.providers.map((item) => (
-            <li key={item.label} className="border border-stone-300 bg-white px-3 py-2 text-sm">
+            <li key={item.label} className="rounded-full bg-amber-100 px-3 py-1 font-sans text-xs font-medium text-amber-950 ring-1 ring-amber-300 ring-inset">
               {item.label} · {item.count}
             </li>
           ))}
@@ -133,9 +134,12 @@ export function AdminPage() {
           <li key={user.id} className="flex flex-wrap items-baseline justify-between gap-3 px-4 py-3">
             <div>
               <p className="font-medium">{user.email}</p>
-              <p className="text-sm text-stone-500">
-                {user.firstName} {user.lastName} · {user.role}
-                {user.isActive ? "" : " · inactive"}
+              <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
+                <span>
+                  {user.firstName} {user.lastName}
+                  {user.isActive ? "" : " · inactive"}
+                </span>
+                <Pill value={user.role} />
               </p>
             </div>
             <p className="text-sm text-stone-500">{new Date(user.createdAt).toLocaleDateString()}</p>
@@ -147,7 +151,7 @@ export function AdminPage() {
       {dashboard.failureCodes.length > 0 ? (
         <ul className="mt-3 flex flex-wrap gap-2">
           {dashboard.failureCodes.map((item) => (
-            <li key={item.label} className="border border-stone-300 bg-white px-3 py-2 text-sm">
+            <li key={item.label} className="rounded-full bg-rose-100 px-3 py-1 font-sans text-xs font-medium text-rose-950 ring-1 ring-rose-300 ring-inset">
               {item.label} · {item.count}
             </li>
           ))}
@@ -159,7 +163,7 @@ export function AdminPage() {
         <ul className="mt-3 divide-y divide-stone-200 border border-stone-200 bg-white">
           {failures.items.map((item) => (
             <li key={item.id} className="px-4 py-3">
-              <Link className="font-medium" to={`/app/investigations/${item.id}`}>
+              <Link className={secondaryButton} to={`/app/investigations/${item.id}`}>
                 {item.title}
               </Link>
               <p className="text-sm text-stone-500">
@@ -179,7 +183,7 @@ export function AdminPage() {
         <ul className="mt-3 divide-y divide-stone-200 border border-stone-200 bg-white">
           {aiErrors.items.map((item) => (
             <li key={item.id} className="px-4 py-3">
-              <Link className="font-medium" to={`/app/investigations/${item.investigationId}`}>
+              <Link className={secondaryButton} to={`/app/investigations/${item.investigationId}`}>
                 {item.purpose}
               </Link>
               <p className="text-sm text-stone-500">
@@ -195,8 +199,8 @@ export function AdminPage() {
 
 function Count({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border border-stone-200 bg-white px-4 py-3">
-      <dt className="text-sm text-stone-500">{label}</dt>
+    <div className="rounded-lg border border-stone-200 border-t-4 border-t-teal-700 bg-white px-4 py-3">
+      <dt className="font-sans text-sm text-stone-500">{label}</dt>
       <dd className="mt-1 text-2xl font-semibold">{value}</dd>
     </div>
   );
