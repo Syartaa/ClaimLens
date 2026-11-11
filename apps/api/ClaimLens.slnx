@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ClaimLens.Api/ClaimLens.Api.csproj" />
+    <Project Path="src/ClaimLens.Application/ClaimLens.Application.csproj" />
+    <Project Path="src/ClaimLens.Domain/ClaimLens.Domain.csproj" />
+    <Project Path="src/ClaimLens.Infrastructure/ClaimLens.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ClaimLens.Api.IntegrationTests/ClaimLens.Api.IntegrationTests.csproj" />
+    <Project Path="tests/ClaimLens.Domain.Tests/ClaimLens.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

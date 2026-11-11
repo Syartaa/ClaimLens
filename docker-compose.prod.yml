@@ -1,0 +1,61 @@
+# Public site. The browser talks only to the web container.
+# Postgres and the AI service stay on the Docker network.
+# Copy demo.env.example, replace the secrets, and set PUBLIC_ORIGIN before a real host.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: claimlens
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: claimlens
+    volumes:
+      - claimlens-prod-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claimlens -d claimlens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      WebOrigin: ${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN}
+      DATABASE_CONNECTION: Host=postgres;Port=5432;Database=claimlens;Username=claimlens;Password=${POSTGRES_PASSWORD}
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=claimlens;Username=claimlens;Password=${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_KEY: ${AI_SERVICE_KEY:?Set AI_SERVICE_KEY}
+      Extraction__Enabled: "true"
+      Evidence__Enabled: "true"
+      Classification__Enabled: "true"
+      Verdict__Enabled: "true"
+      Recovery__Enabled: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
+  ai-service:
+    build:
+      context: ./apps/ai-service
+    environment:
+      AI_SERVICE_KEY: ${AI_SERVICE_KEY:?Set AI_SERVICE_KEY}
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        VITE_API_URL: same-origin
+        NGINX_CONF: nginx.prod.conf
+    ports:
+      - "${PUBLIC_PORT:-80}:80"
+    depends_on:
+      - api
+
+volumes:
+  claimlens-prod-pg:

@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: claimlens
+      POSTGRES_PASSWORD: claimlens
+      POSTGRES_DB: claimlens
+    ports:
+      - "5432:5432"
+    volumes:
+      - claimlens-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claimlens -d claimlens"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      WebOrigin: http://localhost:5173
+      DATABASE_CONNECTION: Host=postgres;Port=5432;Database=claimlens;Username=claimlens;Password=claimlens
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=claimlens;Username=claimlens;Password=claimlens
+      JWT_SECRET: dev-only-claimlens-signing-key-not-for-production-use
+      AI_SERVICE_URL: http://ai-service:8000
+      AI_SERVICE_KEY: dev-internal-key
+      Extraction__Enabled: "true"
+      Evidence__Enabled: "true"
+      Classification__Enabled: "true"
+      Verdict__Enabled: "true"
+      Recovery__Enabled: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
+  ai-service:
+    build:
+      context: ./apps/ai-service
+    environment:
+      AI_SERVICE_KEY: dev-internal-key
+    ports:
+      - "8000:8000"
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        VITE_API_URL: http://localhost:8080
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  claimlens-pg:

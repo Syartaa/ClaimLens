@@ -1,0 +1,1 @@
+Extract the factual claims from the text. Return only claims that can be checked against evidence. Do not decide whether a claim is true.
